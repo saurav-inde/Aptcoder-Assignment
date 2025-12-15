@@ -32,10 +32,16 @@ class _StudentHomeShellState extends State<StudentHomeShell> {
   void initState() {
     super.initState();
 
-    context.read<UserBloc>().add(
-      LoadUser(FirebaseAuth.instance.currentUser!.uid),
-    );
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      context.read<UserBloc>().add(LoadUser(user.uid));
+    }
 
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        context.read<UserBloc>().add(LoadUser(user.uid));
+      }
+    });
     _scrollController.addListener(() {
       final direction = _scrollController.position.userScrollDirection;
 
@@ -64,7 +70,7 @@ class _StudentHomeShellState extends State<StudentHomeShell> {
           backgroundColor: backgroundColor,
 
           /// 🔝 SAME APP BAR FOR ALL TABS
-          appBar: _buildAppBar(context),
+          appBar: _buildAppBar(userState),
           floatingActionButton: isAdmin
               ? FloatingActionButton.extended(
                   backgroundColor: primaryColor,
@@ -115,17 +121,24 @@ class _StudentHomeShellState extends State<StudentHomeShell> {
     );
   }
 
-  AppBar _buildAppBar(BuildContext context) {
-    final userState = context.watch<UserBloc>().state;
-    final user = userState is UserLoaded
-        ? userState.user
-        : UserModel(
-            uid: 'uid',
-            email: 'newuser@aptcoder',
-            displayName: 'Welcome',
-            role: 'student',
-            createdAt: DateTime.now(),
-          );
+  AppBar _buildAppBar(UserState userState) {
+    // final user = userState is UserLoaded
+    //     ? userState.user
+    //     : UserModel(
+    //         uid: 'uid',
+    //         email: 'newuser@aptcoder',
+    //         displayName: 'Welcome',
+    //         role: 'student',
+    //         createdAt: DateTime.now(),
+    //       );
+    if (userState is! UserLoaded) {
+      return AppBar(
+        title: const Text('Loading...'),
+        backgroundColor: Colors.white,
+      );
+    }
+
+    final user = userState.user;
 
     return AppBar(
       elevation: 0,
